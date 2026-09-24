@@ -47,6 +47,17 @@ WIKIJS_API_URL = "http://localhost:3000"
 WIKIJS_API_URL = "http://10.0.0.150:3000"
 ```
 
+## Local development
+
+A local Alliance Auth and Wiki.js validation environment is available under
+[`dev/`](dev/README.md). It runs Wiki.js, PostgreSQL, and Redis in Docker while
+Alliance Auth runs from the repository virtual environment for direct debugging.
+
+```powershell
+.\dev\bootstrap.ps1
+.\dev\start-auth.ps1
+```
+
 ## FAQ
 
 - I lost admin when i registered my admin user.

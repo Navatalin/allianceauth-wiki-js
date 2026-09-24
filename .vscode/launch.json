@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Alliance Auth: Local Wiki.js",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/dev/allianceauth/manage.py",
+            "args": ["runserver", "0.0.0.0:8000"],
+            "cwd": "${workspaceFolder}/dev/allianceauth",
+            "django": true,
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/dev/.env",
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "local_auth.settings.local"
+            }
+        }
+    ]
+}

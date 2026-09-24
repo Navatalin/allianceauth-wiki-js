@@ -3,7 +3,9 @@ from unittest import mock
 from django.conf import settings
 from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 
 from allianceauth.tests.auth_utils import AuthUtils
 
@@ -179,3 +181,46 @@ class WikiJSHooksTestCase(TestCase):
         self.assertIn('href="%s"' % settings.WIKIJS_URL, response)
         self.assertIn('90000001@wiki.invalid', response)
         self.assertNotIn(member.email, response)
+
+
+class WikiJSCredentialsViewTestCase(TestCase):
+    def setUp(self):
+        self.user = AuthUtils.create_member('member_user')
+        AuthUtils.add_main_character_2(
+            self.user,
+            'Main Character',
+            90000001,
+            disconnect_signals=True,
+        )
+        add_permissions()
+        self.client.force_login(self.user)
+
+    @mock.patch(MODULE_PATH + '.views.WikiJSManager.activate_user', return_value='generated-password')
+    def test_activation_displays_username_and_password(self, activate_user):
+        rendered_response = HttpResponse()
+        with mock.patch(MODULE_PATH + '.views.render', return_value=rendered_response) as render:
+            response = self.client.get(reverse('wikijs:activate'))
+
+        self.assertIs(response, rendered_response)
+        self.assertEqual(render.call_args.kwargs['context']['credentials'], {
+            'username': '90000001@wiki.invalid',
+            'password': 'generated-password',
+        })
+        activate_user.assert_called_once_with(self.user)
+
+    @mock.patch(MODULE_PATH + '.views.WikiJSManager._update_password', return_value=True)
+    @mock.patch(MODULE_PATH + '.views.get_random_string', return_value='reset-password')
+    def test_password_reset_displays_username_and_password(self, get_random_string, update_password):
+        WikiJs.objects.create(user=self.user, uid=3)
+
+        rendered_response = HttpResponse()
+        with mock.patch(MODULE_PATH + '.views.render', return_value=rendered_response) as render:
+            response = self.client.get(reverse('wikijs:reset_password'))
+
+        self.assertIs(response, rendered_response)
+        self.assertEqual(render.call_args.kwargs['context']['credentials'], {
+            'username': '90000001@wiki.invalid',
+            'password': 'reset-password',
+        })
+        get_random_string.assert_called_once_with(15)
+        update_password.assert_called_once_with(3, 'reset-password')

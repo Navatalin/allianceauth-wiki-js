@@ -7,11 +7,18 @@ from django.utils.translation import gettext_lazy as _
 from allianceauth.services.forms import ServicePasswordForm
 from allianceauth.services.hooks import get_extension_logger
 
-from .manager import WikiJSManager
+from .manager import WikiJSManager, get_wikijs_email
 
 logger = get_extension_logger(__name__)
 
 ACCESS_PERM = 'wikijs.access_wikijs'
+
+
+def _credentials(user, password):
+    return {
+        'username': get_wikijs_email(user),
+        'password': password,
+    }
 
 
 @login_required
@@ -32,9 +39,9 @@ def deactivate_wikijs(request):
 @permission_required(ACCESS_PERM)
 def activate_wikijs(request):
 
-    credentials = WikiJSManager().activate_user(request.user)
+    password = WikiJSManager().activate_user(request.user)
 
-    if credentials:
+    if password:
         logger.info("Activated Wiki.JS %s" % request.user)
         messages.success(request, _('Activated Wiki.JS'))
     else:
@@ -42,7 +49,10 @@ def activate_wikijs(request):
         messages.error(request, _('An error occurred while processing your Wiki.JS account.'))
         return redirect("services:services")
 
-    return render(request, 'services/service_credentials.html', context={'credentials': {"password":credentials}, 'service': 'Wiki.JS'})
+    return render(request, 'services/service_credentials.html', context={
+        'credentials': _credentials(request.user, password),
+        'service': 'Wiki.JS'
+    })
 
 
 @login_required
@@ -93,4 +103,7 @@ def reset_password(request):
         messages.error(request, _('An error occurred while processing your Wiki.JS account.'))
         return redirect("services:services")
 
-    return render(request, 'services/service_credentials.html', context={'credentials': {"password":password}, 'service': 'Wiki.JS'})
+    return render(request, 'services/service_credentials.html', context={
+        'credentials': _credentials(request.user, password),
+        'service': 'Wiki.JS'
+    })
