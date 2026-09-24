@@ -52,12 +52,14 @@ _create_group_mutation = \
 _update_user_mutation = \
 '''mutation update_user_groups(
   $group_list:[Int]!
+  $email:String!
   $name:String!
   $uid:Int!
 	){
   users{
     update(
       id: $uid
+      email: $email
       name: $name
       groups: $group_list
     ){

@@ -9,7 +9,7 @@ from allianceauth.services.hooks import ServicesHook
 
 from wikijs.app_settings import WIKIJS_AADISCORDBOT_INTEGRATION
 
-from .manager import WikiJSManager
+from .manager import WikiJSManager, get_wikijs_email
 from .models import WikiJs
 from .tasks import WikiJSTasks
 from .urls import urlpatterns
@@ -60,11 +60,17 @@ class WikiJSService(ServicesHook):
         urls.auth_deactivate = 'wikijs:deactivate'
         urls.auth_reset_password = 'wikijs:reset_password'
         urls.auth_set_password = 'wikijs:set_password'
+        username = ''
+        if self.user_has_account(request.user):
+            try:
+                username = get_wikijs_email(request.user)
+            except ValueError:
+                pass
         return render_to_string(self.service_ctrl_template, {
             'service_name': self.title,
             'urls': urls,
             'service_url': self.service_url,
-            'username': request.user.email if self.user_has_account(request.user) else ''
+            'username': username
         }, request=request)
 
     def user_has_account(self, user):

@@ -22,6 +22,21 @@ from .queries import (
 logger = get_extension_logger(__name__)
 
 GROUP_CACHE_MAX_AGE = getattr(settings, 'WIKIJS_GROUP_CACHE_MAX_AGE', 2 * 60 * 60)  # default 2 hours
+GROUP_NAME_MAPPINGS = {
+    'Wiki-Admin': 'Administrators',
+}
+WIKIJS_EMAIL_DOMAIN = 'wiki.invalid'
+
+
+def map_group_name(name):
+    return GROUP_NAME_MAPPINGS.get(name, name)
+
+
+def get_wikijs_email(user):
+    main_character = user.profile.main_character
+    if main_character is None:
+        raise ValueError('A main character is required to create a Wiki.js account')
+    return f'{main_character.character_id}@{WIKIJS_EMAIL_DOMAIN}'
 
 
 class WikiJSManager:
@@ -112,6 +127,7 @@ class WikiJSManager:
         from .auth_hooks import WikiJSService
 
         name = NameFormatter(WikiJSService(), user).format_name()
+        email = get_wikijs_email(user)
 
         if not password:
             password = get_random_string(15)
@@ -125,12 +141,12 @@ class WikiJSManager:
             _create_user_mutation,
             variables={
                 "group_list": group_list,
-                "email": user.email.lower(),
+                "email": email,
                 "name": name,
                 "pass": password}))
         logger.debug(f"API returned: {data}")
         if data["data"]["users"]["create"]["responseResult"]["succeeded"]:
-            uid = self.__find_user(user.email.lower())
+            uid = self.__find_user(email)
             if uid:
                 WikiJs.objects.update_or_create(user=user, uid=uid)
                 return uid
@@ -178,11 +194,13 @@ class WikiJSManager:
             groups.append(WikiJSManager._sanitize_groupname(str(g)))
         group_list = self.__generate_group_list(groups)
         name = NameFormatter(WikiJSService(), user).format_name()
+        email = get_wikijs_email(user)
 
         data = json.loads(self.client.execute(
             _update_user_mutation,
             variables={
                 "uid": user.wikijs.uid,
+                "email": email,
                 "name": name,
                 "group_list": group_list
             }))
@@ -217,6 +235,7 @@ class WikiJSManager:
 
     @staticmethod
     def _sanitize_groupname(name):
+        name = map_group_name(name)
         name = re.sub(r'[^\w]', '', name)
         name = WikiJSManager._sanitize_name(name)
         if len(name) < 3:
@@ -239,7 +258,7 @@ class WikiJSManager:
     def activate_user(self, user):
         # search
         try:
-            uid = self.__find_user(user.email.lower())
+            uid = self.__find_user(get_wikijs_email(user))
             # create
             if not uid:
                 logger.info(f"Creating new user for {user.username}")

@@ -8,6 +8,7 @@ from django.test import RequestFactory, TestCase
 from allianceauth.tests.auth_utils import AuthUtils
 
 from .auth_hooks import WikiJSService
+from .manager import WikiJSManager, get_wikijs_email, map_group_name
 from .models import WikiJs
 
 MODULE_PATH = 'wikijs'
@@ -20,10 +21,74 @@ def add_permissions():
     AuthUtils.add_permissions_to_groups([permission], [members])
 
 
+class GroupNameMappingTestCase(TestCase):
+    def test_maps_wiki_admin_to_administrators(self):
+        self.assertEqual(map_group_name('Wiki-Admin'), 'Administrators')
+        self.assertEqual(WikiJSManager._sanitize_groupname('Wiki-Admin'), 'Administrators')
+
+    def test_preserves_other_group_names(self):
+        self.assertEqual(map_group_name('Member'), 'Member')
+
+
+class WikiJSEmailTestCase(TestCase):
+    def setUp(self):
+        self.user = AuthUtils.create_member('member_user')
+        AuthUtils.add_main_character_2(
+            self.user,
+            'Main Character',
+            90000001,
+            disconnect_signals=True,
+        )
+
+    def test_uses_main_character_id(self):
+        self.user.email = 'private@example.com'
+
+        self.assertEqual(get_wikijs_email(self.user), '90000001@wiki.invalid')
+
+    def test_requires_main_character(self):
+        user = AuthUtils.create_user('no_character')
+
+        with self.assertRaisesMessage(ValueError, 'A main character is required'):
+            get_wikijs_email(user)
+
+    def test_create_uses_generated_email(self):
+        manager = WikiJSManager.__new__(WikiJSManager)
+        manager._client = mock.Mock()
+        manager._client.execute.side_effect = [
+            '{"data": {"users": {"create": {"responseResult": {"succeeded": true}}}}}',
+            '{"data": {"users": {"search": [{"id": 3, "email": "90000001@wiki.invalid"}]}}}',
+        ]
+
+        with mock.patch.object(manager, '_WikiJSManager__generate_group_list', return_value=[]):
+            result = manager._WikiJSManager__create_user(self.user, password='password')
+
+        self.assertEqual(result, 3)
+        create_variables = manager.client.execute.call_args_list[0].kwargs['variables']
+        search_variables = manager.client.execute.call_args_list[1].kwargs['variables']
+        self.assertEqual(create_variables['email'], '90000001@wiki.invalid')
+        self.assertEqual(search_variables['char_email'], '90000001@wiki.invalid')
+
+    def test_update_uses_generated_email(self):
+        WikiJs.objects.create(user=self.user, uid=3)
+        manager = WikiJSManager.__new__(WikiJSManager)
+        manager._client = mock.Mock()
+        manager._client.execute.return_value = '{"data": {"users": {"update": {"responseResult": {"succeeded": true}}}}}'
+
+        with mock.patch.object(manager, '_WikiJSManager__generate_group_list', return_value=[]):
+            self.assertTrue(manager.update_user(self.user))
+
+        variables = manager.client.execute.call_args.kwargs['variables']
+        self.assertEqual(variables['email'], '90000001@wiki.invalid')
+        self.assertNotIn(self.user.email, variables.values())
+
+
 class WikiJSHooksTestCase(TestCase):
     def setUp(self):
         self.member = 'member_user'
         member = AuthUtils.create_member(self.member)
+        member.email = 'private@example.com'
+        member.save()
+        AuthUtils.add_main_character_2(member, 'Main Character', 90000001, disconnect_signals=True)
         WikiJs.objects.create(user=member, uid=3)
         self.none_user = 'none_user'
         self.none_user = AuthUtils.create_user(self.none_user)
@@ -112,3 +177,5 @@ class WikiJSHooksTestCase(TestCase):
         response = service.render_services_ctrl(request)
         self.assertTemplateUsed(service.service_ctrl_template)
         self.assertIn('href="%s"' % settings.WIKIJS_URL, response)
+        self.assertIn('90000001@wiki.invalid', response)
+        self.assertNotIn(member.email, response)
