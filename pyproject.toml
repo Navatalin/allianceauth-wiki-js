@@ -22,6 +22,7 @@ classifiers = [
     "Framework :: Django",
     "Framework :: Django :: 4.0",
     "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.2",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
@@ -41,7 +42,7 @@ dynamic = [
     "version",
 ]
 dependencies = [
-    "allianceauth<5,>=3",
+    "allianceauth<6,>=3",
     "graphqlclient",
 ]
 optional-dependencies.discordbot = [

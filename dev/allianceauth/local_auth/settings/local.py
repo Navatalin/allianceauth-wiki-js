@@ -38,8 +38,8 @@ CELERY_BROKER_URL = BROKER_URL
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
-ESI_SSO_CLIENT_ID = os.getenv("AA_ESI_CLIENT_ID", "local-development")
-ESI_SSO_CLIENT_SECRET = os.getenv("AA_ESI_CLIENT_SECRET", "local-development")
+ESI_SSO_CLIENT_ID = os.getenv("AA_ESI_CLIENT_ID", "")
+ESI_SSO_CLIENT_SECRET = os.getenv("AA_ESI_CLIENT_SECRET", "")
 ESI_SSO_CALLBACK_URL = f"{SITE_URL}/sso/callback"
 ESI_USER_CONTACT_EMAIL = os.getenv("AA_ESI_CONTACT_EMAIL", "developer@example.invalid")
 

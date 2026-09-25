@@ -1,3 +1,5 @@
+param([switch]$RequireEveSso)
+
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
@@ -13,6 +15,14 @@ if (Test-Path (Join-Path $PSScriptRoot ".env")) {
 			[Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), "Process")
 		}
 	}
+}
+
+if ($RequireEveSso -and (
+	[string]::IsNullOrWhiteSpace($env:AA_ESI_CLIENT_ID) -or
+	[string]::IsNullOrWhiteSpace($env:AA_ESI_CLIENT_SECRET) -or
+	$env:AA_ESI_CLIENT_ID -eq "local-development" -or
+	$env:AA_ESI_CLIENT_SECRET -eq "local-development")) {
+	throw "Set real AA_ESI_CLIENT_ID and AA_ESI_CLIENT_SECRET in dev\.env for EVE SSO. Register http://localhost:8000/sso/callback with your EVE developer app."
 }
 
 Push-Location $authRoot

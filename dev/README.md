@@ -13,6 +13,13 @@ From the repository root:
 .\dev\bootstrap.ps1
 ```
 
+This installs the plugin editable from the checkout (tested locally with
+Alliance Auth 5.4.0). To test a Git `master` install after this version
+requirement has been published, run `.\dev\bootstrap.ps1 -InstallFromMaster`.
+That mode requires AA 5.4+ and fails if `master` still requires AA 4; it replaces
+the editable plugin install in the local virtual environment. Rerun the default
+bootstrap command to return to editable development.
+
 Open <http://localhost:3000> and complete the Wiki.js setup wizard. Use
 `http://localhost:3000` as the site URL. In Wiki.js, open **Administration > API
 Access**, enable the API, save the setting, and create a Full Access API key.
@@ -57,8 +64,15 @@ but their page and action permissions must be configured in Wiki.js to test
 reader versus editor access. These fake characters do not provide EVE SSO login.
 
 The admin account can log in at <http://localhost:8000/admin/> without EVE SSO.
-To test real OAuth, replace the `AA_ESI_*` values in `dev/.env` with a development
-application whose callback is `http://localhost:8000/sso/callback`.
+For real character login, register a development app at
+<https://developers.eveonline.com> with the `publicData` scope and callback
+`http://localhost:8000/sso/callback`. Put its client ID and client secret in
+the ignored `dev/.env` as `AA_ESI_CLIENT_ID` and `AA_ESI_CLIENT_SECRET` (do not
+commit them), then run `.\dev\start-auth.ps1 -RequireEveSso`. Sign in from
+<http://localhost:8000> using an actual EVE character. The callback URL must
+match exactly; keep the browser on `localhost`, not `127.0.0.1`. Fake seeded
+characters cannot authenticate through EVE SSO. The new real AA user needs
+`wikijs.access_wikijs` before activating Wiki.js from Services.
 
 After generating the Wiki.js API key, restart Alliance Auth and use its admin to
 grant or inspect the `wikijs.access_wikijs` permission. The fixture already has

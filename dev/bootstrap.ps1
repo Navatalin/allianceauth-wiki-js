@@ -1,3 +1,5 @@
+param([switch]$InstallFromMaster)
+
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
@@ -18,7 +20,12 @@ if (-not (Test-Path $environmentFile)) {
 
 docker compose -f (Join-Path $PSScriptRoot "compose.yml") up -d
 
-& $python -m pip install --editable $repositoryRoot
+if ($InstallFromMaster) {
+    & $python -m pip install --upgrade "git+https://github.com/Navatalin/allianceauth-wiki-js.git@master" "allianceauth>=5.4,<6"
+}
+else {
+    & $python -m pip install --editable $repositoryRoot
+}
 Push-Location $authRoot
 try {
     & $python $manage migrate
