@@ -36,3 +36,28 @@ user.groups.add(wiki_admin)
 print(f"Local Alliance Auth user ready: {username}")
 print(f"Main character ID: {character_id}")
 print("Wiki.js group: Wiki-Admin -> Administrators")
+
+for username, character_id, character_name, group_name in (
+    ("wiki_reader", 90000002, "Local Wiki Reader", "Wiki-Reader"),
+    ("wiki_editor", 90000003, "Local Wiki Editor", "Wiki-Editor"),
+):
+    user, _ = User.objects.get_or_create(username=username)
+    user.set_password("local-development-password")
+    user.save()
+
+    character, _ = EveCharacter.objects.update_or_create(
+        character_id=character_id,
+        defaults={
+            "character_name": character_name,
+            "corporation_id": 98000001,
+            "corporation_name": "Local Development Corporation",
+            "corporation_ticker": "DEV",
+        },
+    )
+    user.profile.main_character = character
+    user.profile.save()
+
+    group, _ = Group.objects.get_or_create(name=group_name)
+    group.permissions.add(Permission.objects.get(codename="access_wikijs"))
+    user.groups.add(group)
+    print(f"Local Alliance Auth user ready: {username} ({character_name}, {character_id}, {group_name})")

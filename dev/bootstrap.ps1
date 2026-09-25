@@ -22,7 +22,8 @@ docker compose -f (Join-Path $PSScriptRoot "compose.yml") up -d
 Push-Location $authRoot
 try {
     & $python $manage migrate
-    Get-Content -Raw (Join-Path $PSScriptRoot "seed_allianceauth.py") | & $python $manage shell
+    $seedScript = Join-Path $PSScriptRoot "seed_allianceauth.py"
+    & $python $manage shell --command "exec(open(r'$seedScript').read())"
     & $python $manage check
 }
 finally {

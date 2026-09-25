@@ -44,6 +44,18 @@ The bootstrap creates this local-only fixture:
 - Main character: `Local Wiki Admin` (`90000001`)
 - Group: `Wiki-Admin`
 
+It also creates two non-staff users with the same local-only password:
+
+| Username | Main character | Alliance Auth group | Wiki.js group |
+| --- | --- | --- | --- |
+| `wiki_reader` | `Local Wiki Reader` (`90000002`) | `Wiki-Reader` | `WikiReader` |
+| `wiki_editor` | `Local Wiki Editor` (`90000003`) | `Wiki-Editor` | `WikiEditor` |
+
+Both groups have `wikijs.access_wikijs`. Group names lose punctuation when the
+plugin maps them to Wiki.js. The plugin creates and assigns the Wiki.js groups,
+but their page and action permissions must be configured in Wiki.js to test
+reader versus editor access. These fake characters do not provide EVE SSO login.
+
 The admin account can log in at <http://localhost:8000/admin/> without EVE SSO.
 To test real OAuth, replace the `AA_ESI_*` values in `dev/.env` with a development
 application whose callback is `http://localhost:8000/sso/callback`.
@@ -60,9 +72,9 @@ Run the end-to-end validation after adding the API key:
 .\dev\validate-integration.ps1
 ```
 
-This creates or reactivates the seeded user in Wiki.js, confirms that
-`Wiki-Admin` maps to `Administrators`, and prints the generated Wiki.js login and
-password. Each run resets that local Wiki.js account password.
+This creates or reactivates all three seeded users in Wiki.js, verifies each
+user's group membership through the Wiki.js API, and prints their generated
+Wiki.js logins and passwords. Each run resets all three Wiki.js passwords.
 
 If validation reports `API is disabled`, enable and save API access in Wiki.js
 before rerunning the command.
