@@ -51,6 +51,28 @@ The bootstrap creates this local-only fixture:
 - Main character: `Local Wiki Admin` (`90000001`)
 - Group: `Wiki-Admin`
 
+Bootstrap also creates two internal AA groups:
+
+| AA group | Permissions | Local fixture users |
+| --- | --- | --- |
+| `AA-Members` | `wikijs.access_wikijs`, `groupmanagement.request_groups` | `admin`, `wiki_reader`, `wiki_editor` |
+| `AA-Admins` | `auth.group_management` (process all group requests) | `admin` |
+
+`AA-Admins` is restricted so only superusers can change its membership in AA.
+It does not by itself set Django's `is_staff` or `is_superuser` flags or grant
+access to `/admin/`; the seeded `admin` user has those flags separately.
+Bootstrap makes the three fake main characters eligible for AA's `Member` state.
+For a real EVE SSO user, add their main character to **Authentication > States
+> Member > Member characters** in AA admin (or configure the appropriate member
+corporation/alliance there). AA will then recalculate their state; do not make
+the Member state public just to test one account. Separately, assign real EVE
+SSO users to `AA-Members` for the wiki service and group-request permissions.
+These two internal groups are not joinable: to test joining or requesting a group, create
+a separate group in AA admin and clear its **Internal** and **Hidden** flags. Choose **Open**
+for automatic admission, or leave it closed for approval by an `AA-Admins`
+member. Make it **Public** only if everyone, including users without
+`groupmanagement.request_groups`, should be able to join.
+
 It also creates two non-staff users with the same local-only password:
 
 | Username | Main character | Alliance Auth group | Wiki.js group |

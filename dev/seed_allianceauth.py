@@ -2,7 +2,20 @@ import os
 
 from django.contrib.auth.models import Group, Permission, User
 
+from allianceauth.authentication.models import State
 from allianceauth.eveonline.models import EveCharacter
+
+members, _ = Group.objects.get_or_create(name="AA-Members")
+members.permissions.add(
+    Permission.objects.get(content_type__app_label="wikijs", codename="access_wikijs"),
+    Permission.objects.get(content_type__app_label="groupmanagement", codename="request_groups"),
+)
+admins, _ = Group.objects.get_or_create(name="AA-Admins")
+admins.permissions.add(
+    Permission.objects.get(content_type__app_label="auth", codename="group_management"),
+)
+admins.authgroup.restricted = True
+admins.authgroup.save(update_fields=["restricted"])
 
 username = os.getenv("AA_ADMIN_USERNAME", "admin")
 password = os.getenv("AA_ADMIN_PASSWORD", "local-development-password")
@@ -28,10 +41,12 @@ character, _ = EveCharacter.objects.update_or_create(
 )
 user.profile.main_character = character
 user.profile.save()
+member_characters = [character]
 
 wiki_admin, _ = Group.objects.get_or_create(name="Wiki-Admin")
 wiki_admin.permissions.add(Permission.objects.get(codename="access_wikijs"))
 user.groups.add(wiki_admin)
+user.groups.add(members, admins)
 
 print(f"Local Alliance Auth user ready: {username}")
 print(f"Main character ID: {character_id}")
@@ -56,8 +71,11 @@ for username, character_id, character_name, group_name in (
     )
     user.profile.main_character = character
     user.profile.save()
+    member_characters.append(character)
 
     group, _ = Group.objects.get_or_create(name=group_name)
     group.permissions.add(Permission.objects.get(codename="access_wikijs"))
-    user.groups.add(group)
+    user.groups.add(group, members)
     print(f"Local Alliance Auth user ready: {username} ({character_name}, {character_id}, {group_name})")
+
+State.objects.get(name="Member").member_characters.add(*member_characters)
